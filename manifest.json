@@ -1,0 +1,19 @@
+{
+  "name": "Etikett — Produkt-Scanner",
+  "short_name": "Etikett",
+  "description": "Barcodes scannen und Nährwerte, Zutaten und Produktbilder aus Open Food Facts anzeigen.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#FBFAF7",
+  "theme_color": "#2F6B4F",
+  "lang": "de",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "scope": "./"
+}
