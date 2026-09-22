@@ -12,8 +12,17 @@ Pages direkt ausliefern kann.
 
 - Barcode per Kamera scannen (EAN-13, EAN-8, UPC, Code-128) oder eintippen
 - Nutri-Score, NOVA-Verarbeitungsgrad und Green-Score als Karten
+- **Portionsrechner:** Portionsgröße eingeben oder aus Vorschlägen wählen
+  (Herstellerangabe, übliche Größe der Produktgruppe, ganze Packung). Die
+  Nährwerte rechnen sich mit, dazu der Anteil an der EU-Referenzmenge
 - Nährwerte je 100 g und je Portion, mit Ampelpunkten für Fett, gesättigte
   Fettsäuren, Zucker und Salz
+- **Zutaten übersetzen:** Umschalten zwischen allen Sprachen, die Open Food
+  Facts für das Produkt hat; fehlt Deutsch oder Englisch, übersetzt die App
+  auf Knopfdruck — sofort per eingebautem Glossar, dann maschinell nachgereicht
+- **Ähnliche Produkte** aus derselben Kategorie, nach Verbreitung sortiert
+- **Günstiger bewertete Alternativen** mit Angabe, was konkret besser ist
+  ("32 % weniger Zucker")
 - Zutatenliste, Allergene, Zusatzstoffe mit E-Nummern, Siegel
 - Produktfoto, Zutatenlisten- und Nährwertfoto einzeln herunterladbar
 - Verlauf der letzten 40 Scans, als CSV exportierbar
@@ -56,6 +65,9 @@ nach **Commit changes** ist die Änderung nach ein bis zwei Minuten online.
 
 - **Farben:** der `:root`-Block ganz oben, `--accent` ist die Hauptfarbe
 - **Nährwerte in der Tabelle:** die Liste `NUTRIENTS` im Skriptteil
+- **Portionsvorschläge je Produktgruppe:** die Liste `CATEGORY_PORTIONS`
+- **Übersetzungsglossar:** das Objekt `GLOSSARY_EN_DE`
+- **Markt für Empfehlungen:** die Konstante `MARKET` (leerer String = weltweit)
 - **Name der App:** `<title>`, die Überschrift `<h1>` und `manifest.json`
 - **Welche Bilder angeboten werden:** die Funktion `pickImages`
 
@@ -67,8 +79,17 @@ Sonst zeigt der Browser Besuchern weiter die alte Fassung aus dem Cache.
 
 - Die Daten stammen von Freiwilligen. Besonders bei Handelsmarken fehlen oft
   Nährwerte oder Fotos. Vor einem Vortrag die konkreten Produkte durchtesten.
-- Open Food Facts erlaubt 15 Produktabrufe pro Minute und IP-Adresse. Scannt
-  eine ganze Gruppe über dasselbe WLAN, kann das eng werden.
+- Open Food Facts erlaubt 15 Produktabrufe und 10 Suchanfragen pro Minute und
+  IP-Adresse. Scannt eine ganze Gruppe über dasselbe WLAN, kann das eng werden;
+  die Empfehlungen sind dann kurzzeitig nicht verfügbar.
+- Die Empfehlungen entstehen aus einer Kategoriesuche und dem Nutri-Score.
+  Geschmack, Preis und Verfügbarkeit im Laden bleiben außen vor — als
+  Gesprächseinstieg in der Beratung taugt es, als Kaufempfehlung nicht ohne
+  eigenen Blick.
+- Die maschinelle Übersetzung läuft über MyMemory: ohne Anmeldung rund 5.000
+  Zeichen pro Tag. Trägst du in `index.html` bei `TRANSLATE_EMAIL` eine Adresse
+  ein, steigt das Kontingent auf 50.000 — die Adresse geht dabei an MyMemory.
+  Für Allergiefragen zählt immer die Originalliste auf der Verpackung.
 - Fehlende Produkte lassen sich in der offiziellen Open-Food-Facts-App selbst
   anlegen und stehen danach allen zur Verfügung.
 - Die Erkennung nutzt, wo vorhanden, die eingebaute Barcode-Funktion des

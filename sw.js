@@ -6,7 +6,7 @@
    Nach jeder Änderung an index.html die Versionsnummer hochzählen,
    sonst behalten Besucher die alte Fassung. */
 
-const VERSION = "etikett-v1";
+const VERSION = "etikett-v2";
 const SHELL = ["./", "./index.html", "./manifest.json", "./icon.svg"];
 
 self.addEventListener("install", (event) => {

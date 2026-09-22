@@ -17,9 +17,9 @@
   --bg:#FBFAF7; --surface:#FFFFFF; --surface-2:#F3F5F0;
   --ink:#1C201B; --muted:#6B7267; --line:#E1E5DC;
   --accent:#2F6B4F; --accent-soft:#E7F0E9; --accent-ink:#1E4A36;
-  --warn:#B4551A; --crit:#9E2B15;
+  --warn:#B4551A; --crit:#9E2B15; --good:#2C7A4B;
+  --btn-ink:#FFFFFF;
   --radius:14px;
-  --shadow:0 1px 2px rgba(28,32,27,.06), 0 8px 24px -12px rgba(28,32,27,.18);
   color-scheme:light;
 }
 @media (prefers-color-scheme: dark){
@@ -27,8 +27,8 @@
     --bg:#121512; --surface:#1B1F1A; --surface-2:#232823;
     --ink:#EDF0E9; --muted:#9AA394; --line:#2E342D;
     --accent:#7CC79B; --accent-soft:#1E2C23; --accent-ink:#BFE3CC;
-    --warn:#E6A268; --crit:#EF8A72;
-    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+    --warn:#E6A268; --crit:#EF8A72; --good:#7CC79B;
+    --btn-ink:#10160F;
     color-scheme:dark;
   }
 }
@@ -36,8 +36,8 @@
   --bg:#121512; --surface:#1B1F1A; --surface-2:#232823;
   --ink:#EDF0E9; --muted:#9AA394; --line:#2E342D;
   --accent:#7CC79B; --accent-soft:#1E2C23; --accent-ink:#BFE3CC;
-  --warn:#E6A268; --crit:#EF8A72;
-  --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px -12px rgba(0,0,0,.6);
+  --warn:#E6A268; --crit:#EF8A72; --good:#7CC79B;
+  --btn-ink:#10160F;
   color-scheme:dark;
 }
 
@@ -53,7 +53,7 @@ body{
 img{max-width:100%}
 [hidden]{display:none !important}
 
-.wrap{max-width:760px; margin:0 auto}
+.wrap{max-width:780px; margin:0 auto}
 
 header.top{
   display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
@@ -75,28 +75,30 @@ header.top p{margin:0; color:var(--muted); font-size:.9rem; flex:1 1 200px}
   border-radius:var(--radius); padding:18px; margin-bottom:18px;
 }
 
-.scan-row{display:flex; gap:10px; flex-wrap:wrap}
+.row{display:flex; gap:10px; flex-wrap:wrap; align-items:center}
 .btn{
   font:inherit; font-weight:600; cursor:pointer; border-radius:10px;
-  padding:11px 16px; border:1px solid transparent; background:var(--accent); color:#fff;
+  padding:11px 16px; border:1px solid transparent;
+  background:var(--accent); color:var(--btn-ink);
 }
-:root[data-theme="dark"] .btn, :root:not([data-theme="light"]) .btn{}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .btn{color:#10160F}}
-:root[data-theme="dark"] .btn{color:#10160F}
 .btn:hover{filter:brightness(1.06)}
-.btn.ghost{background:transparent; color:var(--ink); border-color:var(--line)}
+.btn.ghost{background:transparent; color:var(--ink); border-color:var(--line); font-weight:500}
 .btn.small{padding:7px 12px; font-size:.85rem; font-weight:500}
+.btn[aria-pressed="true"]{background:var(--accent-soft); border-color:var(--accent); color:var(--accent-ink)}
+.btn:disabled{opacity:.5; cursor:default}
 .btn:focus-visible, input:focus-visible, .theme-btn:focus-visible{
   outline:2px solid var(--accent); outline-offset:2px;
 }
 
 label.field{display:block; margin-top:14px; font-size:.85rem; color:var(--muted)}
 .input-row{display:flex; gap:8px; margin-top:6px; flex-wrap:wrap}
-input[type="text"]{
-  flex:1 1 180px; min-width:0; font:inherit; font-variant-numeric:tabular-nums;
+input[type="text"], input[type="number"]{
+  font:inherit; font-variant-numeric:tabular-nums;
   padding:10px 12px; border-radius:10px; border:1px solid var(--line);
-  background:var(--surface-2); color:var(--ink);
+  background:var(--surface-2); color:var(--ink); min-width:0;
 }
+input[type="text"]{flex:1 1 180px}
+input[type="number"]{width:112px}
 
 #videoBox{
   position:relative; margin-top:14px; border-radius:12px; overflow:hidden;
@@ -109,8 +111,9 @@ input[type="text"]{
 }
 .hint{font-size:.85rem; color:var(--muted); margin:10px 0 0}
 .hint.err{color:var(--crit)}
+.hint.tight{margin-top:6px}
 
-/* product */
+/* Produktkopf */
 .prod-head{display:flex; gap:16px; align-items:flex-start; flex-wrap:wrap}
 .prod-thumb{
   width:104px; height:104px; flex:0 0 auto; border-radius:10px; overflow:hidden;
@@ -128,14 +131,15 @@ input[type="text"]{
 .scores{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px}
 .score{
   border:1px solid var(--line); border-radius:12px; padding:10px 12px;
-  min-width:128px; flex:1 1 128px; background:var(--surface-2);
+  min-width:132px; flex:1 1 132px; background:var(--surface-2);
 }
 .score .k{font-size:.72rem; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
 .score .v{display:flex; align-items:center; gap:8px; margin-top:6px}
 .grade{
   width:30px; height:30px; border-radius:7px; display:grid; place-items:center;
-  color:#fff; font-weight:700; font-family:"Fraunces",Georgia,serif; font-size:1rem;
+  color:#fff; font-weight:700; font-family:"Fraunces",Georgia,serif; font-size:1rem; flex:0 0 auto;
 }
+.grade.sm{width:22px; height:22px; font-size:.8rem; border-radius:5px}
 .score .note{font-size:.85rem; color:var(--muted)}
 
 h3.sec{
@@ -143,6 +147,15 @@ h3.sec{
   padding-top:16px; border-top:1px solid var(--line);
 }
 .panel > h3.sec:first-child{margin-top:0; padding-top:0; border-top:none}
+
+/* Portionsrechner */
+.portion-box{background:var(--surface-2); border:1px solid var(--line); border-radius:12px; padding:12px 14px; margin-bottom:14px}
+.chips-btn{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px}
+.chip-btn{
+  font:inherit; font-size:.82rem; padding:5px 11px; border-radius:99px; cursor:pointer;
+  border:1px solid var(--line); background:var(--surface); color:var(--ink);
+}
+.chip-btn[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--btn-ink)}
 
 table.nutri{width:100%; border-collapse:collapse; font-variant-numeric:tabular-nums}
 .tablewrap{overflow-x:auto}
@@ -152,10 +165,18 @@ table.nutri th, table.nutri td{
 table.nutri th:first-child, table.nutri td:first-child{text-align:left}
 table.nutri thead th{font-size:.72rem; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); font-weight:500}
 table.nutri tr.major td{font-weight:600}
-table.nutri td.sub{padding-left:20px; color:var(--muted)}
+table.nutri td.sub{padding-left:20px; color:var(--muted); font-weight:400}
+table.nutri td.ri{width:110px}
 .lvl{display:inline-block; width:8px; height:8px; border-radius:99px; margin-left:7px; vertical-align:middle}
+.bar{position:relative; height:6px; border-radius:99px; background:var(--line); overflow:hidden; margin-top:3px}
+.bar > i{position:absolute; inset:0 auto 0 0; display:block; border-radius:99px; background:var(--accent)}
+.bar > i.hi{background:var(--crit)}
+.bar > i.mid{background:var(--warn)}
+.ri-num{font-size:.78rem; color:var(--muted)}
 
-.ing{font-size:.94rem; margin:0}
+/* Zutaten */
+.ing{font-size:.94rem; margin:0; white-space:pre-wrap}
+.ing.translated{border-left:3px solid var(--accent); padding-left:12px}
 .chips{display:flex; flex-wrap:wrap; gap:6px; margin:8px 0 0; padding:0; list-style:none}
 .chips li{
   font-size:.82rem; padding:4px 9px; border-radius:99px;
@@ -163,6 +184,7 @@ table.nutri td.sub{padding-left:20px; color:var(--muted)}
 }
 .chips.alert li{background:transparent; border-color:var(--warn); color:var(--warn)}
 
+/* Bilder */
 .imgs{display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:14px; margin-top:4px}
 .imgcard{border:1px solid var(--line); border-radius:12px; overflow:hidden; background:var(--surface-2); display:flex; flex-direction:column}
 .imgcard .ph{aspect-ratio:3/4; display:grid; place-items:center; overflow:hidden; background:var(--surface)}
@@ -170,10 +192,35 @@ table.nutri td.sub{padding-left:20px; color:var(--muted)}
 .imgcard .ft{display:flex; align-items:center; justify-content:space-between; gap:8px; padding:9px 10px; font-size:.85rem}
 .imgcard .ft span{color:var(--muted)}
 
-.hist{list-style:none; margin:0; padding:0}
-.hist li{
-  display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--line);
+/* Empfehlungen */
+.recs{display:grid; grid-template-columns:repeat(auto-fill, minmax(152px,1fr)); gap:12px; margin-top:4px}
+.rec{
+  border:1px solid var(--line); border-radius:12px; background:var(--surface-2);
+  padding:10px; text-align:left; cursor:pointer; font:inherit; color:var(--ink);
+  display:flex; flex-direction:column; gap:7px;
 }
+.rec:hover{border-color:var(--accent)}
+.rec .pic{aspect-ratio:1; background:var(--surface); border-radius:8px; display:grid; place-items:center; overflow:hidden}
+.rec .pic img{width:100%; height:100%; object-fit:contain}
+.rec .nm{font-size:.86rem; line-height:1.3; font-weight:500}
+.rec .mt{font-size:.78rem; color:var(--muted)}
+
+.alts{display:flex; flex-direction:column; gap:10px; margin-top:4px}
+.alt{
+  display:flex; gap:12px; align-items:center; width:100%; text-align:left; cursor:pointer;
+  border:1px solid var(--line); border-radius:12px; background:var(--surface-2);
+  padding:10px 12px; font:inherit; color:var(--ink);
+}
+.alt:hover{border-color:var(--good)}
+.alt .pic{width:54px; height:54px; flex:0 0 auto; background:var(--surface); border-radius:8px; overflow:hidden; display:grid; place-items:center}
+.alt .pic img{width:100%; height:100%; object-fit:contain}
+.alt .body{flex:1 1 auto; min-width:0}
+.alt .nm{font-size:.92rem; font-weight:500; line-height:1.3}
+.alt .mt{font-size:.8rem; color:var(--muted)}
+.alt .win{font-size:.8rem; color:var(--good); margin-top:2px}
+
+.hist{list-style:none; margin:0; padding:0}
+.hist li{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--line)}
 .hist li:last-child{border-bottom:none}
 .hist .hname{flex:1 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:.94rem}
 .hist .hcode{font-variant-numeric:tabular-nums; font-size:.8rem; color:var(--muted)}
@@ -189,12 +236,12 @@ footer.foot a{color:var(--muted)}
 
   <header class="top">
     <h1>Etikett</h1>
-    <p>Barcode scannen, Nährwerte und Hintergründe aus der Open-Food-Facts-Datenbank lesen.</p>
+    <p>Barcode scannen, Nährwerte auf die eigene Portion rechnen, Zutaten übersetzen, Alternativen finden.</p>
     <button class="theme-btn" id="themeBtn" type="button">Dunkel / Hell</button>
   </header>
 
   <section class="panel">
-    <div class="scan-row">
+    <div class="row">
       <button class="btn" id="startBtn" type="button">Kamera starten</button>
       <button class="btn ghost" id="stopBtn" type="button" hidden>Kamera stoppen</button>
     </div>
@@ -218,7 +265,7 @@ footer.foot a{color:var(--muted)}
   <section class="panel" id="histPanel" hidden>
     <h3 class="sec">Zuletzt gescannt</h3>
     <ul class="hist" id="hist"></ul>
-    <div class="scan-row" style="margin-top:12px">
+    <div class="row" style="margin-top:12px">
       <button class="btn small ghost" id="exportBtn" type="button">Verlauf als CSV sichern</button>
       <button class="btn small ghost" id="clearBtn" type="button">Verlauf löschen</button>
     </div>
@@ -233,11 +280,25 @@ footer.foot a{color:var(--muted)}
 <script>
 "use strict";
 
-/* ---------- Konfiguration ---------- */
-const APP = { name: "Etikett", version: "1.0" };
-const API = "https://world.openfoodfacts.org/api/v2/product/";
+/* ========================================================================
+   Konfiguration
+   ======================================================================== */
+const APP = { name: "Etikett", version: "2.0" };
+const API_PRODUCT = "https://world.openfoodfacts.org/api/v2/product/";
+const API_SEARCH  = "https://world.openfoodfacts.org/api/v2/search";
 
-/* ---------- kleine Helfer ---------- */
+/* Markt, auf den sich Empfehlungen beziehen. Leerer String = weltweit. */
+const MARKET = "en:germany";
+
+/* Übersetzungsdienst MyMemory: ohne Anmeldung rund 5.000 Zeichen pro Tag.
+   Trägt man hier eine E-Mail-Adresse ein, steigt das Kontingent auf 50.000.
+   Die Adresse wird dabei an MyMemory übertragen — nur eintragen, wenn das
+   für dich in Ordnung ist. */
+const TRANSLATE_EMAIL = "";
+
+/* ========================================================================
+   Helfer
+   ======================================================================== */
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, c =>
   ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c]));
@@ -248,22 +309,22 @@ function setHint(text, isError) {
   h.classList.toggle("err", !!isError);
 }
 
-/* Theme-Umschalter */
 (function theme(){
   let saved = null;
   try { saved = localStorage.getItem("etikett-theme"); } catch (e) {}
   if (saved) document.documentElement.setAttribute("data-theme", saved);
   $("themeBtn").addEventListener("click", () => {
     const cur = document.documentElement.getAttribute("data-theme");
-    const dark = cur ? cur === "dark"
-      : window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const dark = cur ? cur === "dark" : window.matchMedia("(prefers-color-scheme: dark)").matches;
     const next = dark ? "light" : "dark";
     document.documentElement.setAttribute("data-theme", next);
     try { localStorage.setItem("etikett-theme", next); } catch (e) {}
   });
 })();
 
-/* ---------- Bewertungen ---------- */
+/* ========================================================================
+   Bewertungsskalen
+   ======================================================================== */
 const NUTRI_COLORS = { a:"#038141", b:"#85BB2F", c:"#FECB02", d:"#EE8100", e:"#E63E11" };
 const NUTRI_TEXT   = { a:"#fff", b:"#16300A", c:"#3A2E00", d:"#fff", e:"#fff" };
 const NUTRI_NOTE = {
@@ -272,13 +333,21 @@ const NUTRI_NOTE = {
 };
 const NOVA_NOTE = {
   1:"unverarbeitet oder gering verarbeitet",
-  2:"verarbeitete Zutat (z. B. Öl, Zucker, Salz)",
+  2:"verarbeitete Zutat (Öl, Zucker, Salz)",
   3:"verarbeitetes Lebensmittel",
   4:"hochverarbeitetes Lebensmittel"
 };
 const NOVA_COLOR = { 1:"#038141", 2:"#85BB2F", 3:"#EE8100", 4:"#E63E11" };
 const LEVEL_COLOR = { low:"#038141", moderate:"#EE8100", high:"#E63E11" };
 const LEVEL_TEXT  = { low:"wenig", moderate:"mittel", high:"viel" };
+
+const gradeRank = (g) => ({ a:1, b:2, c:3, d:4, e:5 })[String(g || "").toLowerCase()] || 9;
+
+/* Referenzmengen für einen Erwachsenen nach EU-Verordnung 1169/2011 */
+const REFERENCE = {
+  "energy-kcal": 2000, fat: 70, "saturated-fat": 20,
+  carbohydrates: 260, sugars: 90, proteins: 50, salt: 6
+};
 
 const ALLERGEN_DE = {
   milk:"Milch", gluten:"Gluten", eggs:"Eier", soybeans:"Soja", nuts:"Schalenfrüchte",
@@ -288,69 +357,241 @@ const ALLERGEN_DE = {
 };
 
 const tagLabel = (t) => String(t).replace(/^[a-z]{2}:/, "").replace(/-/g, " ");
-const allergenLabel = (t) => {
-  const key = String(t).replace(/^[a-z]{2}:/, "");
-  return ALLERGEN_DE[key] || tagLabel(t);
-};
+const allergenLabel = (t) => ALLERGEN_DE[String(t).replace(/^[a-z]{2}:/, "")] || tagLabel(t);
 const additiveLabel = (t) => {
   const m = String(t).match(/^[a-z]{2}:(e\d+[a-z]*)/i);
   return m ? m[1].toUpperCase() : tagLabel(t);
 };
 
-/* ---------- Nährwerte ---------- */
+const LANG_NAME = {
+  de:"Deutsch", en:"Englisch", fr:"Französisch", it:"Italienisch", es:"Spanisch",
+  nl:"Niederländisch", pl:"Polnisch", pt:"Portugiesisch", da:"Dänisch", sv:"Schwedisch",
+  cs:"Tschechisch", tr:"Türkisch", ru:"Russisch", ro:"Rumänisch", hu:"Ungarisch"
+};
+
+/* ========================================================================
+   Nährwerte
+   ======================================================================== */
 const NUTRIENTS = [
-  { key:"energy-kcal", label:"Energie",            unit:"kcal", major:true },
-  { key:"fat",         label:"Fett",               unit:"g",    major:true, level:"fat" },
+  { key:"energy-kcal",  label:"Energie",                     unit:"kcal", major:true },
+  { key:"fat",          label:"Fett",                        unit:"g", major:true, level:"fat" },
   { key:"saturated-fat",label:"davon gesättigte Fettsäuren", unit:"g", sub:true, level:"saturated-fat" },
-  { key:"carbohydrates",label:"Kohlenhydrate",     unit:"g",    major:true },
-  { key:"sugars",      label:"davon Zucker",       unit:"g",    sub:true, level:"sugars" },
-  { key:"fiber",       label:"Ballaststoffe",      unit:"g" },
-  { key:"proteins",    label:"Eiweiß",             unit:"g",    major:true },
-  { key:"salt",        label:"Salz",               unit:"g",    major:true, level:"salt" }
+  { key:"carbohydrates",label:"Kohlenhydrate",               unit:"g", major:true },
+  { key:"sugars",       label:"davon Zucker",                unit:"g", sub:true, level:"sugars" },
+  { key:"fiber",        label:"Ballaststoffe",               unit:"g" },
+  { key:"proteins",     label:"Eiweiß",                      unit:"g", major:true },
+  { key:"salt",         label:"Salz",                        unit:"g", major:true, level:"salt" }
 ];
 
-function num(v, unit) {
-  if (v === undefined || v === null || v === "") return null;
-  const n = Number(v);
-  if (!isFinite(n)) return null;
-  const digits = unit === "kcal" ? 0 : (n < 1 ? 2 : 1);
+function fmt(n, unit) {
+  if (n === null || n === undefined || !isFinite(n)) return null;
+  const digits = unit === "kcal" ? 0 : (Math.abs(n) < 1 ? 2 : 1);
   return n.toFixed(digits).replace(".", ",");
 }
+const val100 = (p, key) => {
+  const v = Number((p.nutriments || {})[key + "_100g"]);
+  return isFinite(v) ? v : null;
+};
 
-function nutritionTable(p) {
-  const n = p.nutriments || {};
-  const levels = p.nutrient_levels || {};
-  const hasServing = NUTRIENTS.some(r => n[r.key + "_serving"] !== undefined);
-  const rows = NUTRIENTS.map(r => {
-    const per100 = num(n[r.key + "_100g"], r.unit);
-    const perServ = num(n[r.key + "_serving"], r.unit);
-    if (per100 === null && perServ === null) return "";
-    const lvl = r.level && levels[r.level];
-    const dot = lvl
-      ? `<span class="lvl" style="background:${LEVEL_COLOR[lvl] || "transparent"}" title="${LEVEL_TEXT[lvl] || lvl}"></span>`
-      : "";
-    return `<tr class="${r.major ? "major" : ""}">
-      <td class="${r.sub ? "sub" : ""}">${esc(r.label)}${dot}</td>
-      <td>${per100 === null ? "–" : per100 + " " + r.unit}</td>
-      ${hasServing ? `<td>${perServ === null ? "–" : perServ + " " + r.unit}</td>` : ""}
-    </tr>`;
-  }).join("");
+/* ========================================================================
+   Portionsgröße: Vorschläge aus den Produktdaten und der Kategorie
+   ======================================================================== */
+const CATEGORY_PORTIONS = [
+  { match:/beverages|drinks|juices|sodas|waters|smoothies/, g:250, label:"Glas" },
+  { match:/chocolates|chocolate/,        g:25,  label:"Riegelstück" },
+  { match:/biscuits|cookies|cakes/,      g:30,  label:"2 Kekse" },
+  { match:/breakfast-cereals|mueslis|granolas/, g:45, label:"Müslischale" },
+  { match:/breads|baguettes|toasts/,     g:50,  label:"Scheibe" },
+  { match:/yogurts|fermented-milk/,      g:150, label:"Becher" },
+  { match:/cheeses/,                     g:30,  label:"Scheibe" },
+  { match:/crisps|chips|appetizers|snacks/, g:30, label:"Handvoll" },
+  { match:/pastas|rices|legumes|grains/, g:80,  label:"Portion roh" },
+  { match:/nuts|seeds/,                  g:25,  label:"Handvoll" },
+  { match:/meats|sausages|charcuterie/,  g:60,  label:"Portion" },
+  { match:/spreads|jams|honeys/,         g:20,  label:"Aufstrich" },
+  { match:/desserts|ice-cream/,          g:100, label:"Portion" },
+  { match:/soups|ready-meals|pizzas/,    g:350, label:"Fertiggericht" }
+];
 
-  if (!rows.trim()) return `<p class="hint">Für dieses Produkt sind keine Nährwerte hinterlegt.</p>`;
-
-  const serving = p.serving_size ? esc(p.serving_size) : "Portion";
-  return `<div class="tablewrap"><table class="nutri">
-    <thead><tr><th>Nährwert</th><th>je 100 g/ml</th>${hasServing ? `<th>je ${serving}</th>` : ""}</tr></thead>
-    <tbody>${rows}</tbody>
-  </table></div>
-  <p class="hint">Farbpunkte: <span class="lvl" style="background:${LEVEL_COLOR.low}"></span> wenig ·
-  <span class="lvl" style="background:${LEVEL_COLOR.moderate}"></span> mittel ·
-  <span class="lvl" style="background:${LEVEL_COLOR.high}"></span> viel (Bewertung je 100 g).</p>`;
+function parseGrams(text) {
+  if (!text) return null;
+  const m = String(text).match(/([\d.,]+)\s*(g|ml|l|kg)\b/i);
+  if (!m) return null;
+  let n = parseFloat(m[1].replace(",", "."));
+  if (!isFinite(n)) return null;
+  const unit = m[2].toLowerCase();
+  if (unit === "kg" || unit === "l") n *= 1000;
+  return Math.round(n);
 }
+
+function isDrink(p) {
+  const tags = (p.categories_tags || []).join(" ");
+  return /beverages|drinks|juices|sodas|waters|smoothies/.test(tags) ||
+         /\bml\b|\bl\b/i.test(p.quantity || "");
+}
+
+function portionSuggestions(p) {
+  const out = [];
+  const seen = new Set();
+  const push = (g, label) => {
+    g = Math.round(g);
+    if (!g || g <= 0 || g > 5000 || seen.has(g)) return;
+    seen.add(g); out.push({ g, label });
+  };
+
+  const serving = parseGrams(p.serving_size);
+  if (serving) push(serving, "Portion laut Hersteller");
+
+  const tags = (p.categories_tags || []).join(" ");
+  const cat = CATEGORY_PORTIONS.find(c => c.match.test(tags));
+  if (cat) push(cat.g, cat.label);
+
+  push(100, isDrink(p) ? "100 ml" : "100 g");
+
+  const pack = Number(p.product_quantity) || parseGrams(p.quantity);
+  if (pack && pack <= 2000) push(pack, "ganze Packung");
+  else if (pack && pack > 2000) push(pack / 2, "halbe Packung");
+
+  return out.slice(0, 5);
+}
+
+/* ========================================================================
+   Zutaten-Übersetzung
+   ======================================================================== */
+
+/* Kleines Glossar für die Sofortübersetzung ohne Netz. Deckt die Begriffe ab,
+   die auf europäischen Etiketten am häufigsten vorkommen. */
+const GLOSSARY_EN_DE = {
+  "water":"Wasser","sugar":"Zucker","salt":"Salz","wheat":"Weizen","flour":"Mehl",
+  "wheat flour":"Weizenmehl","whole wheat":"Vollkornweizen","milk":"Milch",
+  "whole milk":"Vollmilch","skimmed milk":"Magermilch","milk powder":"Milchpulver",
+  "cream":"Sahne","butter":"Butter","cheese":"Käse","egg":"Ei","eggs":"Eier",
+  "egg white":"Eiweiß","egg yolk":"Eigelb","yeast":"Hefe","starch":"Stärke",
+  "modified starch":"modifizierte Stärke","cocoa":"Kakao","cocoa butter":"Kakaobutter",
+  "cocoa mass":"Kakaomasse","chocolate":"Schokolade","vanilla":"Vanille",
+  "vanilla extract":"Vanilleextrakt","honey":"Honig","oil":"Öl",
+  "sunflower oil":"Sonnenblumenöl","rapeseed oil":"Rapsöl","palm oil":"Palmöl",
+  "olive oil":"Olivenöl","vegetable oil":"Pflanzenöl","vegetable fat":"Pflanzenfett",
+  "soy":"Soja","soya":"Soja","soybeans":"Sojabohnen","soy lecithin":"Sojalecithin",
+  "lecithin":"Lecithin","emulsifier":"Emulgator","stabiliser":"Stabilisator",
+  "stabilizer":"Stabilisator","thickener":"Verdickungsmittel","preservative":"Konservierungsstoff",
+  "antioxidant":"Antioxidationsmittel","acidity regulator":"Säureregulator",
+  "acid":"Säure","citric acid":"Zitronensäure","ascorbic acid":"Ascorbinsäure",
+  "flavouring":"Aroma","flavoring":"Aroma","natural flavouring":"natürliches Aroma",
+  "colour":"Farbstoff","color":"Farbstoff","sweetener":"Süßungsmittel",
+  "raising agent":"Backtriebmittel","baking powder":"Backpulver",
+  "rice":"Reis","oats":"Hafer","oat":"Hafer","barley":"Gerste","rye":"Roggen",
+  "corn":"Mais","maize":"Mais","potato":"Kartoffel","potatoes":"Kartoffeln",
+  "tomato":"Tomate","tomatoes":"Tomaten","onion":"Zwiebel","garlic":"Knoblauch",
+  "carrot":"Karotte","pepper":"Pfeffer","paprika":"Paprika","spices":"Gewürze",
+  "herbs":"Kräuter","parsley":"Petersilie","basil":"Basilikum",
+  "apple":"Apfel","apples":"Äpfel","orange":"Orange","lemon":"Zitrone",
+  "strawberry":"Erdbeere","banana":"Banane","fruit":"Frucht","fruits":"Früchte",
+  "vegetables":"Gemüse","nuts":"Nüsse","hazelnuts":"Haselnüsse","almonds":"Mandeln",
+  "peanuts":"Erdnüsse","walnuts":"Walnüsse","cashews":"Cashewkerne",
+  "sesame":"Sesam","sunflower seeds":"Sonnenblumenkerne",
+  "chicken":"Hähnchen","pork":"Schwein","beef":"Rind","turkey":"Pute","fish":"Fisch",
+  "gelatine":"Gelatine","gelatin":"Gelatine","whey":"Molke","whey powder":"Molkenpulver",
+  "protein":"Eiweiß","glucose syrup":"Glukosesirup","fructose":"Fruktose",
+  "dextrose":"Dextrose","invert sugar":"Invertzucker","caramel":"Karamell",
+  "malt":"Malz","malt extract":"Malzextrakt","vinegar":"Essig","mustard":"Senf",
+  "celery":"Sellerie","concentrate":"Konzentrat","juice":"Saft",
+  "from concentrate":"aus Konzentrat","organic":"Bio","may contain":"kann Spuren enthalten von",
+  "traces":"Spuren","contains":"enthält","and":"und","or":"oder","of":"von",
+  "with":"mit","in":"in","powder":"Pulver","extract":"Extrakt","dried":"getrocknet",
+  "roasted":"geröstet","hydrogenated":"gehärtet","partially":"teilweise","fat":"Fett"
+};
+
+const GLOSSARY_DE_EN = (() => {
+  const out = {};
+  for (const [en, de] of Object.entries(GLOSSARY_EN_DE)) {
+    const k = de.toLowerCase();
+    if (!out[k]) out[k] = en;
+  }
+  return out;
+})();
+
+/* Wörterbuch-Übersetzung: ersetzt bekannte Begriffe, lässt den Rest stehen.
+   Längere Begriffe zuerst, damit "wheat flour" vor "wheat" greift. */
+function glossaryTranslate(text, dict) {
+  const keys = Object.keys(dict).sort((a, b) => b.length - a.length);
+  let out = text;
+  for (const k of keys) {
+    const re = new RegExp("\\b" + k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "gi");
+    out = out.replace(re, dict[k]);
+  }
+  return out;
+}
+
+/* Maschinelle Übersetzung über MyMemory. Der Text wird an Kommas in Stücke
+   unter 450 Zeichen geteilt, weil der Dienst lange Anfragen abweist. */
+async function machineTranslate(text, from, to) {
+  const parts = text.split(",");
+  const chunks = [];
+  let cur = "";
+  parts.forEach((part, i) => {
+    const piece = part + (i < parts.length - 1 ? "," : "");
+    if (cur && (cur + piece).length > 450) { chunks.push(cur); cur = ""; }
+    cur += piece;
+  });
+  if (cur.trim()) chunks.push(cur);
+
+  const results = [];
+  for (const chunk of chunks) {
+    const url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(chunk) +
+      "&langpair=" + from + "|" + to +
+      (TRANSLATE_EMAIL ? "&de=" + encodeURIComponent(TRANSLATE_EMAIL) : "");
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("HTTP " + res.status);
+    const data = await res.json();
+    const t = data && data.responseData && data.responseData.translatedText;
+    if (!t) throw new Error("Keine Übersetzung erhalten");
+    if (/MYMEMORY WARNING|QUOTA/i.test(t)) throw new Error("Tageskontingent des Übersetzers erschöpft");
+    results.push(t);
+  }
+  return results.join(" ");
+}
+
+/* Welche Sprachen liegen für dieses Produkt vor? */
+function ingredientLanguages(p) {
+  const out = [];
+  for (const key of Object.keys(p)) {
+    const m = key.match(/^ingredients_text_([a-z]{2})$/);
+    if (m && String(p[key]).trim().length > 3) out.push(m[1]);
+  }
+  if (!out.length && String(p.ingredients_text || "").trim().length > 3) {
+    out.push(p.lang || "xx");
+  }
+  return out;
+}
+function ingredientText(p, lang) {
+  return String(p["ingredients_text_" + lang] || (lang === (p.lang || "xx") ? p.ingredients_text : "") || "").trim();
+}
+
+/* ========================================================================
+   Zustand
+   ======================================================================== */
+let state = {
+  product: null,
+  code: "",
+  portion: 100,
+  unit: "g",
+  images: [],
+  ingLang: "",
+  ingShown: "",      // aktuell angezeigter Text
+  ingSource: "",     // Herkunft: "original" | "glossar" | "maschine"
+  similar: null
+};
+let busy = false;
+const searchCache = new Map();
+
+/* ========================================================================
+   Abschnitte rendern
+   ======================================================================== */
 
 function scoreCards(p) {
   const cards = [];
-  const ns = (p.nutriscore_grade || "").toLowerCase();
+  const ns = String(p.nutriscore_grade || "").toLowerCase();
   if (NUTRI_COLORS[ns]) {
     cards.push(`<div class="score"><div class="k">Nutri-Score</div><div class="v">
       <span class="grade" style="background:${NUTRI_COLORS[ns]}; color:${NUTRI_TEXT[ns]}">${ns.toUpperCase()}</span>
@@ -362,13 +603,102 @@ function scoreCards(p) {
       <span class="grade" style="background:${NOVA_COLOR[nova]}; color:#fff">${nova}</span>
       <span class="note">${NOVA_NOTE[nova]}</span></div></div>`);
   }
-  const eco = (p.ecoscore_grade || p.environmental_score_grade || "").toLowerCase();
+  const eco = String(p.ecoscore_grade || p.environmental_score_grade || "").toLowerCase();
   if (NUTRI_COLORS[eco]) {
     cards.push(`<div class="score"><div class="k">Green-Score — Umwelt</div><div class="v">
       <span class="grade" style="background:${NUTRI_COLORS[eco]}; color:${NUTRI_TEXT[eco]}">${eco.toUpperCase()}</span>
       <span class="note">Umweltwirkung</span></div></div>`);
   }
   return cards.length ? `<div class="scores">${cards.join("")}</div>` : "";
+}
+
+function portionControls(p) {
+  const sugg = portionSuggestions(p);
+  const unit = state.unit;
+  return `<div class="portion-box">
+    <div class="row">
+      <label for="portionInput" style="font-size:.9rem">Portionsgröße</label>
+      <input type="number" id="portionInput" min="1" max="5000" step="1" value="${state.portion}">
+      <span class="ri-num">${esc(unit)}</span>
+    </div>
+    <div class="chips-btn" id="portionChips">
+      ${sugg.map(s => `<button class="chip-btn" type="button" data-portion="${s.g}"
+        aria-pressed="${s.g === state.portion ? "true" : "false"}">${esc(s.label)} · ${s.g} ${esc(unit)}</button>`).join("")}
+    </div>
+    ${sugg.some(s => s.label === "Portion laut Hersteller")
+      ? ""
+      : `<p class="hint tight">Für dieses Produkt ist keine Portionsangabe hinterlegt. Die Vorschläge sind übliche Größen für die Produktgruppe.</p>`}
+  </div>`;
+}
+
+function nutritionTable(p) {
+  const levels = p.nutrient_levels || {};
+  const factor = state.portion / 100;
+  const rows = NUTRIENTS.map(r => {
+    const base = val100(p, r.key);
+    if (base === null) return "";
+    const per = base * factor;
+    const ref = REFERENCE[r.key];
+    const pct = ref ? (per / ref) * 100 : null;
+    const lvl = r.level && levels[r.level];
+    const dot = lvl ? `<span class="lvl" style="background:${LEVEL_COLOR[lvl] || "transparent"}" title="${LEVEL_TEXT[lvl] || lvl}"></span>` : "";
+    let riCell = "–";
+    if (pct !== null) {
+      const cls = pct >= 50 ? "hi" : (pct >= 25 ? "mid" : "");
+      riCell = `<span class="ri-num">${Math.round(pct)} %</span>
+        <span class="bar"><i class="${cls}" style="width:${Math.min(100, pct).toFixed(0)}%"></i></span>`;
+    }
+    return `<tr class="${r.major ? "major" : ""}">
+      <td class="${r.sub ? "sub" : ""}">${esc(r.label)}${dot}</td>
+      <td>${fmt(base, r.unit)} ${r.unit}</td>
+      <td>${fmt(per, r.unit)} ${r.unit}</td>
+      <td class="ri">${riCell}</td>
+    </tr>`;
+  }).join("");
+
+  if (!rows.trim()) return `<p class="hint">Für dieses Produkt sind keine Nährwerte hinterlegt.</p>`;
+
+  return `<div class="tablewrap"><table class="nutri">
+    <thead><tr>
+      <th>Nährwert</th>
+      <th>je 100 ${esc(state.unit)}</th>
+      <th>je ${state.portion} ${esc(state.unit)}</th>
+      <th class="ri">Referenzmenge</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>
+  <p class="hint">Referenzmenge: Anteil am Tagesbedarf eines durchschnittlichen Erwachsenen
+  (8.400 kJ / 2.000 kcal, EU-Verordnung 1169/2011). Kein individueller Bedarfswert.
+  Farbpunkte: <span class="lvl" style="background:${LEVEL_COLOR.low}"></span> wenig ·
+  <span class="lvl" style="background:${LEVEL_COLOR.moderate}"></span> mittel ·
+  <span class="lvl" style="background:${LEVEL_COLOR.high}"></span> viel, bezogen auf 100 ${esc(state.unit)}.</p>`;
+}
+
+function ingredientsSection(p) {
+  const langs = ingredientLanguages(p);
+  if (!langs.length) return `<p class="hint">Keine Zutatenliste hinterlegt.</p>`;
+
+  const chips = langs.map(l => `<button class="chip-btn" type="button" data-inglang="${esc(l)}"
+    aria-pressed="${l === state.ingLang ? "true" : "false"}">${esc(LANG_NAME[l] || l.toUpperCase())}</button>`).join("");
+
+  const sourceNote = {
+    original: "",
+    glossar: `<p class="hint tight">Wörterbuch-Übersetzung der App: bekannte Begriffe ersetzt, Satzbau unverändert. Für eine saubere Übersetzung den Knopf daneben nutzen.</p>`,
+    maschine: `<p class="hint tight">Maschinell übersetzt über MyMemory. Für Allergiefragen immer die Originalliste auf der Verpackung heranziehen.</p>`
+  }[state.ingSource] || "";
+
+  const hasDe = langs.includes("de");
+  const hasEn = langs.includes("en");
+
+  return `
+    <div class="chips-btn" style="margin-bottom:10px">
+      ${chips}
+      ${!hasDe ? `<button class="chip-btn" type="button" data-translate="de">→ Deutsch übersetzen</button>` : ""}
+      ${!hasEn ? `<button class="chip-btn" type="button" data-translate="en">→ Englisch übersetzen</button>` : ""}
+      ${state.ingSource !== "original" ? `<button class="chip-btn" type="button" data-translate="reset">Original zeigen</button>` : ""}
+    </div>
+    <p class="ing ${state.ingSource !== "original" ? "translated" : ""}" id="ingText">${esc(state.ingShown)}</p>
+    ${sourceNote}`;
 }
 
 function pickImages(p) {
@@ -381,10 +711,9 @@ function pickImages(p) {
   return out;
 }
 
-function imageSection(p, code) {
-  const imgs = pickImages(p);
-  if (!imgs.length) return `<p class="hint">Zu diesem Produkt sind noch keine Fotos in der Datenbank.</p>`;
-  return `<div class="imgs">` + imgs.map((im, i) => `
+function imageSection(code) {
+  if (!state.images.length) return `<p class="hint">Zu diesem Produkt sind noch keine Fotos in der Datenbank.</p>`;
+  return `<div class="imgs">` + state.images.map((im, i) => `
     <figure class="imgcard" style="margin:0">
       <div class="ph"><img src="${esc(im.url)}" alt="${esc(im.label)}" loading="lazy"></div>
       <figcaption class="ft">
@@ -394,15 +723,131 @@ function imageSection(p, code) {
     </figure>`).join("") + `</div>`;
 }
 
-/* ---------- Produkt anzeigen ---------- */
-let currentImages = [];
+/* ========================================================================
+   Empfehlungen
+   ======================================================================== */
+const recName = (r) => r.product_name_de || r.product_name || "Produkt ohne Namen";
 
-function render(p, code) {
-  currentImages = pickImages(p);
+async function searchCategory(tag, market) {
+  const cacheKey = tag + "|" + (market || "");
+  if (searchCache.has(cacheKey)) return searchCache.get(cacheKey);
+  const params = new URLSearchParams({
+    categories_tags: tag,
+    fields: "code,product_name,product_name_de,brands,quantity,nutriscore_grade,nova_group,image_front_small_url,nutriments",
+    page_size: "50",
+    sort_by: "unique_scans_n"
+  });
+  if (market) params.set("countries_tags", market);
+  const res = await fetch(API_SEARCH + "?" + params.toString());
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const data = await res.json();
+  const list = (data.products || []).filter(x => x.code && x.code !== state.code);
+  searchCache.set(cacheKey, list);
+  return list;
+}
+
+/* Sucht von der speziellsten Kategorie nach oben, bis genug Treffer da sind.
+   Höchstens drei Abfragen, weil Open Food Facts nur zehn Suchen pro Minute erlaubt.
+   Liefert der deutsche Markt zu wenig, wird einmal weltweit nachgeschlagen. */
+async function loadSimilar(p) {
+  const cats = (p.categories_tags || []).slice().reverse();
+  let found = [];
+  let calls = 0;
+  for (const tag of cats.slice(0, 2)) {
+    found = await searchCategory(tag, MARKET);
+    calls++;
+    if (found.length >= 8) return found;
+  }
+  if (found.length < 4 && MARKET && cats.length && calls < 3) {
+    const wide = await searchCategory(cats[0], "");
+    if (wide.length > found.length) return wide;
+  }
+  return found;
+}
+
+function relatedMarkup(list) {
+  if (!list.length) return `<p class="hint">Keine vergleichbaren Produkte in dieser Kategorie gefunden.</p>`;
+  return `<div class="recs">` + list.slice(0, 8).map(r => {
+    const g = String(r.nutriscore_grade || "").toLowerCase();
+    const badge = NUTRI_COLORS[g]
+      ? `<span class="grade sm" style="background:${NUTRI_COLORS[g]}; color:${NUTRI_TEXT[g]}">${g.toUpperCase()}</span>`
+      : "";
+    return `<button class="rec" type="button" data-open="${esc(r.code)}">
+      <span class="pic">${r.image_front_small_url ? `<img src="${esc(r.image_front_small_url)}" alt="" loading="lazy">` : ""}</span>
+      <span class="nm">${esc(recName(r))}</span>
+      <span class="mt">${badge} ${esc(r.brands || "")}</span>
+    </button>`;
+  }).join("") + `</div>`;
+}
+
+/* Vergleich: was ist an der Alternative konkret besser? */
+function improvements(base, alt) {
+  const out = [];
+  const pairs = [
+    ["sugars", "Zucker", "g"],
+    ["saturated-fat", "gesättigte Fettsäuren", "g"],
+    ["salt", "Salz", "g"],
+    ["energy-kcal", "Energie", "kcal"]
+  ];
+  for (const [key, label, unit] of pairs) {
+    const a = val100(base, key), b = val100(alt, key);
+    if (a === null || b === null || a <= 0) continue;
+    const diff = a - b;
+    if (diff <= 0) continue;
+    const pct = Math.round((diff / a) * 100);
+    if (pct < 10) continue;
+    out.push(`${pct} % weniger ${label}`);
+  }
+  const fa = val100(base, "fiber"), fb = val100(alt, "fiber");
+  if (fa !== null && fb !== null && fb > fa + 1) out.push(`mehr Ballaststoffe (${fmt(fb, "g")} statt ${fmt(fa, "g")} g)`);
+  return out.slice(0, 3);
+}
+
+function healthierMarkup(p, list) {
+  const own = gradeRank(p.nutriscore_grade);
+  if (own === 9) {
+    return `<p class="hint">Für dieses Produkt fehlt der Nutri-Score, deshalb lässt sich kein Vergleich rechnen.</p>`;
+  }
+  const better = list
+    .filter(r => gradeRank(r.nutriscore_grade) < own)
+    .sort((a, b) => {
+      const d = gradeRank(a.nutriscore_grade) - gradeRank(b.nutriscore_grade);
+      if (d) return d;
+      return (val100(a, "sugars") ?? 99) - (val100(b, "sugars") ?? 99);
+    })
+    .slice(0, 4);
+
+  if (!better.length) {
+    return own <= 2
+      ? `<p class="hint">In dieser Kategorie liegt das Produkt bereits im oberen Bereich. Keine besser bewertete Alternative gefunden.</p>`
+      : `<p class="hint">In der Datenbank ist für diese Kategorie gerade keine besser bewertete Alternative hinterlegt.</p>`;
+  }
+
+  return `<div class="alts">` + better.map(r => {
+    const g = String(r.nutriscore_grade || "").toLowerCase();
+    const wins = improvements(p, r);
+    return `<button class="alt" type="button" data-open="${esc(r.code)}">
+      <span class="pic">${r.image_front_small_url ? `<img src="${esc(r.image_front_small_url)}" alt="" loading="lazy">` : ""}</span>
+      <span class="body">
+        <span class="nm">${esc(recName(r))}</span>
+        <span class="mt">${esc(r.brands || "")}${r.quantity ? " · " + esc(r.quantity) : ""}</span>
+        ${wins.length ? `<span class="win">${esc(wins.join(" · "))}</span>` : ""}
+      </span>
+      <span class="grade" style="background:${NUTRI_COLORS[g]}; color:${NUTRI_TEXT[g]}">${g.toUpperCase()}</span>
+    </button>`;
+  }).join("") + `</div>
+  <p class="hint">Vergleich allein über den Nutri-Score und die Nährwerte je 100 ${esc(state.unit)}.
+  Geschmack, Preis, Verfügbarkeit und individuelle Verträglichkeit bleiben außen vor.</p>`;
+}
+
+/* ========================================================================
+   Gesamtansicht
+   ======================================================================== */
+function render() {
+  const p = state.product, code = state.code;
   const name = p.product_name_de || p.product_name || "Produkt ohne Namen";
   const brand = [p.brands, p.quantity].filter(Boolean).join(" · ");
   const front = p.image_front_small_url || p.image_front_url || "";
-  const ing = p.ingredients_text_de || p.ingredients_text || "";
   const allergens = (p.allergens_tags || []).map(allergenLabel);
   const additives = (p.additives_tags || []).map(additiveLabel);
   const labels = (p.labels_tags || []).map(tagLabel).slice(0, 12);
@@ -420,58 +865,176 @@ function render(p, code) {
 
     ${scoreCards(p)}
 
-    <h3 class="sec">Nährwerte</h3>
-    ${nutritionTable(p)}
+    <h3 class="sec">Nährwerte für deine Portion</h3>
+    ${portionControls(p)}
+    <div id="nutriZone">${nutritionTable(p)}</div>
 
     <h3 class="sec">Zutaten</h3>
-    ${ing ? `<p class="ing">${esc(ing)}</p>` : `<p class="hint">Keine Zutatenliste hinterlegt.</p>`}
+    <div id="ingZone">${ingredientsSection(p)}</div>
     ${allergens.length ? `<p class="hint" style="margin-top:12px">Allergene</p><ul class="chips alert">${allergens.map(a=>`<li>${esc(a)}</li>`).join("")}</ul>` : ""}
     ${additives.length ? `<p class="hint" style="margin-top:12px">Zusatzstoffe</p><ul class="chips">${additives.map(a=>`<li>${esc(a)}</li>`).join("")}</ul>` : ""}
     ${labels.length ? `<p class="hint" style="margin-top:12px">Label und Siegel</p><ul class="chips">${labels.map(a=>`<li>${esc(a)}</li>`).join("")}</ul>` : ""}
 
     <h3 class="sec">Bilder</h3>
-    ${imageSection(p, code)}
+    ${imageSection(code)}
+
+    <h3 class="sec">Ähnliche Produkte</h3>
+    <div id="relZone"><p class="hint">Wird geladen …</p></div>
+
+    <h3 class="sec">Günstiger bewertete Alternativen</h3>
+    <div id="altZone"><p class="hint">Wird geladen …</p></div>
 
     <h3 class="sec">Quelle</h3>
     <p class="hint">
       <a href="https://world.openfoodfacts.org/product/${encodeURIComponent(code)}" target="_blank" rel="noopener">Produktseite bei Open Food Facts öffnen</a>
       — dort lassen sich fehlende Angaben und Fotos ergänzen.
     </p>`;
+
   $("result").hidden = false;
   $("result").scrollIntoView({ behavior:"smooth", block:"start" });
+  loadRecommendations();
 }
 
-/* Download eines Bildes */
-document.addEventListener("click", async (ev) => {
-  const btn = ev.target.closest("[data-img]");
-  if (!btn) return;
-  const im = currentImages[Number(btn.dataset.img)];
-  if (!im) return;
-  const code = btn.dataset.code || "produkt";
-  const ext = (im.url.split("?")[0].match(/\.(jpe?g|png|webp)$/i) || [".jpg"])[0];
-  const filename = `${code}_${im.file}${ext}`;
-  const old = btn.textContent;
-  btn.textContent = "lädt …";
-  try {
-    const res = await fetch(im.url, { mode:"cors" });
-    if (!res.ok) throw new Error(res.status);
-    const blob = await res.blob();
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = filename;
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 4000);
-    btn.textContent = "gespeichert";
-  } catch (e) {
-    window.open(im.url, "_blank", "noopener");
-    btn.textContent = "im Tab geöffnet";
+function refreshNutrition() {
+  $("nutriZone").innerHTML = nutritionTable(state.product);
+  document.querySelectorAll("#portionChips [data-portion]").forEach(b => {
+    b.setAttribute("aria-pressed", Number(b.dataset.portion) === state.portion ? "true" : "false");
+  });
+}
+function refreshIngredients() {
+  $("ingZone").innerHTML = ingredientsSection(state.product);
+}
+
+async function loadRecommendations() {
+  const p = state.product;
+  if (!(p.categories_tags || []).length) {
+    $("relZone").innerHTML = `<p class="hint">Dem Produkt ist keine Kategorie zugeordnet, deshalb gibt es keine Vergleichsbasis.</p>`;
+    $("altZone").innerHTML = "";
+    return;
   }
-  setTimeout(() => { btn.textContent = old; }, 2500);
+  try {
+    const list = await loadSimilar(p);
+    state.similar = list;
+    $("relZone").innerHTML = relatedMarkup(list);
+    $("altZone").innerHTML = healthierMarkup(p, list);
+  } catch (e) {
+    const msg = String(e.message).includes("429")
+      ? "Die Suche ist gerade gedrosselt (zehn Suchanfragen pro Minute). Gleich noch einmal versuchen."
+      : "Vergleichsprodukte konnten nicht geladen werden: " + e.message;
+    $("relZone").innerHTML = `<p class="hint err">${esc(msg)}</p>`;
+    $("altZone").innerHTML = "";
+  }
+}
+
+/* ========================================================================
+   Ereignisse innerhalb der Produktansicht
+   ======================================================================== */
+document.addEventListener("input", (ev) => {
+  if (ev.target.id !== "portionInput") return;
+  const v = Math.max(1, Math.min(5000, Math.round(Number(ev.target.value) || 0)));
+  if (!v) return;
+  state.portion = v;
+  refreshNutrition();
 });
 
-/* ---------- Abruf ---------- */
-let busy = false;
+document.addEventListener("click", async (ev) => {
+  /* Portionsvorschlag */
+  const pc = ev.target.closest("[data-portion]");
+  if (pc) {
+    state.portion = Number(pc.dataset.portion);
+    const inp = $("portionInput");
+    if (inp) inp.value = state.portion;
+    refreshNutrition();
+    return;
+  }
 
+  /* Sprache der Zutatenliste wechseln */
+  const lc = ev.target.closest("[data-inglang]");
+  if (lc) {
+    state.ingLang = lc.dataset.inglang;
+    state.ingShown = ingredientText(state.product, state.ingLang);
+    state.ingSource = "original";
+    refreshIngredients();
+    return;
+  }
+
+  /* Übersetzen */
+  const tc = ev.target.closest("[data-translate]");
+  if (tc) {
+    const target = tc.dataset.translate;
+    if (target === "reset") {
+      state.ingShown = ingredientText(state.product, state.ingLang);
+      state.ingSource = "original";
+      refreshIngredients();
+      return;
+    }
+    const source = ingredientText(state.product, state.ingLang);
+    if (!source) return;
+
+    /* Sofort das Glossar anwenden, damit direkt etwas Lesbares dasteht. */
+    const dict = target === "de" ? GLOSSARY_EN_DE : GLOSSARY_DE_EN;
+    state.ingShown = glossaryTranslate(source, dict);
+    state.ingSource = "glossar";
+    refreshIngredients();
+
+    /* Dann die richtige Übersetzung nachladen. */
+    const zone = $("ingZone");
+    const marker = document.createElement("p");
+    marker.className = "hint tight";
+    marker.textContent = "Übersetzung wird geladen …";
+    zone.appendChild(marker);
+    try {
+      const from = state.ingLang === "xx" ? "en" : state.ingLang;
+      const txt = await machineTranslate(source, from, target);
+      state.ingShown = txt;
+      state.ingSource = "maschine";
+      refreshIngredients();
+    } catch (e) {
+      marker.textContent = "Maschinelle Übersetzung nicht möglich (" + e.message + "). Oben steht die Wörterbuch-Fassung.";
+      marker.classList.add("err");
+    }
+    return;
+  }
+
+  /* Empfehlung öffnen */
+  const oc = ev.target.closest("[data-open]");
+  if (oc) { lookup(oc.dataset.open); return; }
+
+  /* Bild herunterladen */
+  const btn = ev.target.closest("[data-img]");
+  if (btn) {
+    const im = state.images[Number(btn.dataset.img)];
+    if (!im) return;
+    const code = btn.dataset.code || "produkt";
+    const ext = (im.url.split("?")[0].match(/\.(jpe?g|png|webp)$/i) || [".jpg"])[0];
+    const old = btn.textContent;
+    btn.textContent = "lädt …";
+    try {
+      const res = await fetch(im.url, { mode:"cors" });
+      if (!res.ok) throw new Error(res.status);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = `${code}_${im.file}${ext}`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+      btn.textContent = "gespeichert";
+    } catch (e) {
+      window.open(im.url, "_blank", "noopener");
+      btn.textContent = "im Tab geöffnet";
+    }
+    setTimeout(() => { btn.textContent = old; }, 2500);
+    return;
+  }
+
+  /* Verlaufseintrag */
+  const again = ev.target.closest("[data-again]");
+  if (again) lookup(again.dataset.again);
+});
+
+/* ========================================================================
+   Produktabruf
+   ======================================================================== */
 async function lookup(code) {
   code = String(code).replace(/\D/g, "");
   if (code.length < 8) { setHint("Das sieht nicht nach einem gültigen Barcode aus.", true); return; }
@@ -479,20 +1042,37 @@ async function lookup(code) {
   busy = true;
   setHint("Suche " + code + " …");
   try {
-    const url = API + encodeURIComponent(code) +
+    const url = API_PRODUCT + encodeURIComponent(code) +
       ".json?app_name=" + encodeURIComponent(APP.name) +
       "&app_version=" + encodeURIComponent(APP.version);
     const res = await fetch(url);
-    if (res.status === 429) { setHint("Zu viele Anfragen — kurz warten (max. 15 Abrufe pro Minute).", true); return; }
+    if (res.status === 429) { setHint("Zu viele Anfragen — kurz warten (15 Produktabrufe pro Minute).", true); return; }
     if (!res.ok) throw new Error("HTTP " + res.status);
     const data = await res.json();
     if (data.status !== 1 || !data.product) {
-      setHint("Zu " + code + " gibt es noch keinen Eintrag. Über die Open-Food-Facts-App kannst du das Produkt selbst anlegen.", true);
+      setHint("Zu " + code + " gibt es noch keinen Eintrag. Über die Open-Food-Facts-App lässt sich das Produkt selbst anlegen.", true);
       $("result").hidden = true;
       return;
     }
     const p = data.product;
-    render(p, code);
+
+    const langs = ingredientLanguages(p);
+    const preferred = langs.includes("de") ? "de" : (langs.includes("en") ? "en" : (langs[0] || ""));
+    const sugg = portionSuggestions(p);
+
+    state = {
+      product: p,
+      code,
+      portion: sugg.length ? sugg[0].g : 100,
+      unit: isDrink(p) ? "ml" : "g",
+      images: pickImages(p),
+      ingLang: preferred,
+      ingShown: preferred ? ingredientText(p, preferred) : "",
+      ingSource: "original",
+      similar: null
+    };
+
+    render();
     addHistory(code, p.product_name_de || p.product_name || "Unbenanntes Produkt", p.brands || "");
     setHint("Gefunden. Nächsten Barcode scannen oder eintippen.");
   } catch (e) {
@@ -505,7 +1085,9 @@ async function lookup(code) {
 $("lookupBtn").addEventListener("click", () => lookup($("manualCode").value));
 $("manualCode").addEventListener("keydown", (e) => { if (e.key === "Enter") lookup(e.target.value); });
 
-/* ---------- Verlauf ---------- */
+/* ========================================================================
+   Verlauf
+   ======================================================================== */
 function readHistory() {
   try { return JSON.parse(localStorage.getItem("etikett-history") || "[]"); }
   catch (e) { return []; }
@@ -529,10 +1111,6 @@ function paintHistory() {
       <button class="btn small ghost" type="button" data-again="${esc(x.code)}">öffnen</button>
     </li>`).join("");
 }
-document.addEventListener("click", (ev) => {
-  const b = ev.target.closest("[data-again]");
-  if (b) lookup(b.dataset.again);
-});
 $("clearBtn").addEventListener("click", () => { writeHistory([]); paintHistory(); });
 $("exportBtn").addEventListener("click", () => {
   const rows = [["Barcode","Produkt","Marke","Gescannt am"]]
@@ -547,9 +1125,10 @@ $("exportBtn").addEventListener("click", () => {
 });
 paintHistory();
 
-/* ---------- Kamera und Barcode-Erkennung ---------- */
+/* ========================================================================
+   Kamera und Barcode-Erkennung
+   ======================================================================== */
 let stream = null, detector = null, zxingReader = null, scanning = false, lastCode = "", lastAt = 0;
-
 const FORMATS = ["ean_13","ean_8","upc_a","upc_e","code_128","code_39","itf"];
 
 function loadScript(src) {
@@ -567,8 +1146,7 @@ async function startCamera() {
   }
   try {
     stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 } },
-      audio: false
+      video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 } }, audio: false
     });
   } catch (e) {
     setHint("Kein Kamerazugriff (" + e.name + "). Die Seite muss über https laufen und die Freigabe erlaubt sein.", true);
@@ -638,7 +1216,9 @@ $("startBtn").addEventListener("click", startCamera);
 $("stopBtn").addEventListener("click", stopCamera);
 window.addEventListener("pagehide", stopCamera);
 
-/* ---------- Service Worker (macht die App installierbar und offline-fähig) ---------- */
+/* ========================================================================
+   Service Worker
+   ======================================================================== */
 if ("serviceWorker" in navigator && location.protocol === "https:") {
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js").catch(() => {});
