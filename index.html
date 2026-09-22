@@ -6,13 +6,26 @@
 <meta name="theme-color" content="#2F6B4F">
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" href="./icon.svg">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Etikett">
 <title>Etikett — Produkt-Scanner</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Public+Sans:wght@400;500;700&display=swap">
 <style>
+/* Die beiden Schriften liegen als Datei im Projekt und werden NICHT von
+   Google geladen. Sonst ginge bei jedem Aufruf die IP-Adresse der Nutzer an
+   einen Server in den USA, ohne dass jemand zugestimmt hat — für den Einsatz
+   in Beratung und Kursen ist das der Punkt, an dem es unangenehm wird.
+   Beide Schriften sind variabel: eine Datei deckt alle Strichstärken ab.
+   Lizenz SIL OFL 1.1, Volltext in SCHRIFTEN-LIZENZ.txt. */
+@font-face{
+  font-family:"Fraunces"; font-style:normal; font-weight:400 900;
+  font-display:swap; src:url("./fraunces.woff2") format("woff2");
+}
+@font-face{
+  font-family:"Public Sans"; font-style:normal; font-weight:100 900;
+  font-display:swap; src:url("./public-sans.woff2") format("woff2");
+}
+
 :root{
   --bg:#FBFAF7; --surface:#FFFFFF; --surface-2:#F3F5F0;
   --ink:#1C201B; --muted:#6B7267; --line:#E1E5DC;
@@ -257,7 +270,22 @@ footer.foot a{color:var(--muted)}
       <button class="btn ghost" id="lookupBtn" type="button">Suchen</button>
     </div>
 
-    <p class="hint" id="hint">Tipp: Die Kamera braucht eine https-Adresse. Auf dem iPhone funktioniert der Scan in Safari ab iOS 17, sonst einfach die Zahl unter dem Barcode eintippen.</p>
+    <label class="field" for="textQuery">Oder nach Produktnamen suchen</label>
+    <div class="input-row">
+      <input type="text" id="textQuery" autocomplete="off" placeholder="z. B. Haferflocken, Alpro Joghurt">
+      <button class="btn ghost" id="searchBtn" type="button">Finden</button>
+    </div>
+
+    <p class="hint" id="hint" role="status" aria-live="polite">Tipp: Die Kamera braucht eine https-Adresse. Auf dem iPhone funktioniert der Scan in Safari ab iOS 17, sonst einfach die Zahl unter dem Barcode eintippen.</p>
+  </section>
+
+  <section class="panel" id="searchPanel" hidden>
+    <h3 class="sec">Suchergebnisse</h3>
+    <p class="hint" id="searchStatus" role="status" aria-live="polite"></p>
+    <div id="searchZone"></div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn small ghost" id="closeSearchBtn" type="button">Ergebnisse ausblenden</button>
+    </div>
   </section>
 
   <section class="panel" id="result" hidden></section>
@@ -283,9 +311,16 @@ footer.foot a{color:var(--muted)}
 /* ========================================================================
    Konfiguration
    ======================================================================== */
-const APP = { name: "Etikett", version: "2.0" };
+const APP = { name: "Etikett", version: "2.3" };
 const API_PRODUCT = "https://world.openfoodfacts.org/api/v2/product/";
 const API_SEARCH  = "https://world.openfoodfacts.org/api/v2/search";
+
+/* Die Suche nach Produktnamen läuft über die ältere Adresse /cgi/search.pl.
+   Grund: die neuere v2-Schnittstelle kann ausschließlich nach Kategorien und
+   Merkmalen filtern, aber keine Volltextsuche. Der Nachfolger
+   search.openfoodfacts.org könnte es, sendet aber keinen CORS-Kopf und ist
+   aus dem Browser deshalb nicht erreichbar — nachgemessen, siehe CLAUDE.md. */
+const API_TEXT    = "https://world.openfoodfacts.org/cgi/search.pl";
 
 /* Markt, auf den sich Empfehlungen beziehen. Leerer String = weltweit. */
 const MARKET = "en:germany";
@@ -424,10 +459,27 @@ function parseGrams(text) {
   return Math.round(n);
 }
 
+/* Die Kategorien als ein Text, für die Mustervergleiche weiter unten.
+
+   Wichtig: `en:plant-based-foods-and-beverages` ist bei Open Food Facts die
+   Oberkategorie für ALLE pflanzlichen Lebensmittel — Haferflocken, Brot,
+   Nudeln, Gemüse, Nüsse. Wer darin nach "beverages" sucht, erklärt den halben
+   Supermarkt zum Getränk. Genau das ist passiert: Haferflocken wurden in
+   Millilitern gerechnet und mit „Glas · 250 ml“ vorgeschlagen. Solche
+   Sammelbegriffe fliegen deshalb vorher raus. */
+const categoryText = (p) => (p.categories_tags || [])
+  .filter(t => !/foods-and-beverages/.test(t))
+  .join(" ");
+
 function isDrink(p) {
-  const tags = (p.categories_tags || []).join(" ");
-  return /beverages|drinks|juices|sodas|waters|smoothies/.test(tags) ||
-         /\bml\b|\bl\b/i.test(p.quantity || "");
+  if (/beverages|drinks|juices|sodas|waters|smoothies/.test(categoryText(p))) return true;
+
+  /* Fehlt die Kategorie, entscheidet die Mengenangabe. Die Zahl davor muss
+     mitgeprüft werden: das alte Muster hielt schon ein einzelnes "l" für
+     einen Liter und damit etwa "Öl" für ein Getränk. */
+  const menge = String(p.quantity || "");
+  if (/\d\s*(g|kg)\b/i.test(menge)) return false;
+  return /\d\s*(ml|cl|l)\b/i.test(menge);
 }
 
 function portionSuggestions(p) {
@@ -442,8 +494,7 @@ function portionSuggestions(p) {
   const serving = parseGrams(p.serving_size);
   if (serving) push(serving, "Portion laut Hersteller");
 
-  const tags = (p.categories_tags || []).join(" ");
-  const cat = CATEGORY_PORTIONS.find(c => c.match.test(tags));
+  const cat = CATEGORY_PORTIONS.find(c => c.match.test(categoryText(p)));
   if (cat) push(cat.g, cat.label);
 
   push(100, isDrink(p) ? "100 ml" : "100 g");
@@ -512,13 +563,29 @@ const GLOSSARY_DE_EN = (() => {
 })();
 
 /* Wörterbuch-Übersetzung: ersetzt bekannte Begriffe, lässt den Rest stehen.
-   Längere Begriffe zuerst, damit "wheat flour" vor "wheat" greift. */
+   Längere Begriffe zuerst, damit "wheat flour" vor "wheat" greift.
+
+   Die Wortgrenze wird von Hand geprüft statt mit \b. \b kennt in JavaScript
+   nur Buchstaben ohne Akzent, deshalb wurden Einträge wie "Äpfel", "Öl" oder
+   "Gewürze" in der Richtung Deutsch → Englisch nie gefunden. Vorne fängt eine
+   Gruppe das Zeichen davor ab und schreibt es unverändert zurück, hinten steht
+   ein Vorausblick. Ein Rückblick auf das Zeichen davor — in regulären
+   Ausdrücken die Lookbehind-Schreibweise — kommt bewusst nicht vor: ältere
+   iOS-Safari brechen daran schon beim Einlesen der Datei ab, und dann bleibt
+   die ganze App schwarz. */
 function glossaryTranslate(text, dict) {
   const keys = Object.keys(dict).sort((a, b) => b.length - a.length);
   let out = text;
   for (const k of keys) {
-    const re = new RegExp("\\b" + k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b", "gi");
-    out = out.replace(re, dict[k]);
+    const safe = k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    let re;
+    try {
+      re = new RegExp("(^|[^\\p{L}])" + safe + "(?![\\p{L}])", "giu");
+    } catch (e) {
+      /* Sehr alte Browser kennen \p{L} nicht — dann wenigstens Latin-1. */
+      re = new RegExp("(^|[^A-Za-zÀ-ÿ])" + safe + "(?![A-Za-zÀ-ÿ])", "gi");
+    }
+    out = out.replace(re, (treffer, davor) => davor + dict[k]);
   }
   return out;
 }
@@ -728,41 +795,153 @@ function imageSection(code) {
    ======================================================================== */
 const recName = (r) => r.product_name_de || r.product_name || "Produkt ohne Namen";
 
-async function searchCategory(tag, market) {
+/* Open Food Facts drosselt die Kategoriesuche. Abgewiesen wird mit HTTP 503,
+   und zwar ohne CORS-Header — der Browser darf die Antwort deshalb nicht lesen
+   und meldet nur ein nacktes "Failed to fetch". Der Statuscode ist im Frontend
+   nicht sichtbar. Das sieht nach einem CORS-Problem aus, ist aber keins.
+
+   Im September 2026 gegen den echten Dienst gemessen:
+   - Eine Abweisung kommt nach rund 0,2 Sekunden zurück, eine echte Antwort
+     braucht etwa eine Sekunde. Der Server wirft also sofort ab, wenn er
+     ausgelastet ist. Er bestraft nicht, er hat gerade keine Luft.
+   - Deshalb lohnt schnelles Nachfassen: mit anderthalb Sekunden Abstand war
+     über drei Kategorien hinweg spätestens der vierte Versuch erfolgreich.
+   - Lange Pausen bringen nichts. Mit zwanzig Sekunden Abstand wurde dieselbe
+     Kategorie genauso abgewiesen wie mit zwei. Die früher hier eingetragenen
+     sechs Sekunden haben also nur Wartezeit gekostet.
+   - sort_by bleibt draußen, auch sort_by=popularity_key. Das ist die teuerste
+     Abfrageform und wird praktisch immer abgewiesen. */
+
+const SEARCH_GAP_MS = 1500;      // Abstand zwischen zwei Suchanfragen
+const SEARCH_TRIES  = 5;         // Versuche je Kategorie
+const CACHE_TTL_MS  = 24 * 3600 * 1000;
+const EMPTY_TTL_MS  = 60 * 60 * 1000;   // leere Trefferlisten nur kurz merken
+let lastSearchAt = 0;
+
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+function cacheRead(key) {
+  if (searchCache.has(key)) return searchCache.get(key);
+  try {
+    const raw = localStorage.getItem("etikett-cat-" + key);
+    if (!raw) return null;
+    const box = JSON.parse(raw);
+    if (!box) return null;
+    /* Eine leere Trefferliste kann auch daran liegen, dass die Kategorie bei
+       Open Food Facts gerade erst gefüllt wird. Die merken wir uns nur eine
+       Stunde, gefüllte Listen einen ganzen Tag. */
+    const ttl = box.ttl || CACHE_TTL_MS;
+    if (Date.now() - box.at > ttl) return null;
+    searchCache.set(key, box.list);
+    return box.list;
+  } catch (e) { return null; }
+}
+function cacheWrite(key, wert) {
+  searchCache.set(key, wert);
+  /* Die Kategoriesuche legt eine reine Liste ab, die Namenssuche zusätzlich
+     die Gesamtzahl der Treffer. Beides landet hier. */
+  const inhalt = Array.isArray(wert) ? wert : ((wert && wert.treffer) || []);
+  try {
+    localStorage.setItem("etikett-cat-" + key, JSON.stringify({
+      at: Date.now(), list: wert, ttl: inhalt.length ? CACHE_TTL_MS : EMPTY_TTL_MS
+    }));
+  } catch (e) { /* Speicher voll oder gesperrt — nicht weiter schlimm */ }
+}
+
+async function searchCategory(tag, market, onTry) {
   const cacheKey = tag + "|" + (market || "");
-  if (searchCache.has(cacheKey)) return searchCache.get(cacheKey);
+  const hit = cacheRead(cacheKey);
+  if (hit) return hit;
+
   const params = new URLSearchParams({
     categories_tags: tag,
     fields: "code,product_name,product_name_de,brands,quantity,nutriscore_grade,nova_group,image_front_small_url,nutriments",
-    page_size: "50",
-    sort_by: "unique_scans_n"
+    page_size: "50"
   });
   if (market) params.set("countries_tags", market);
-  const res = await fetch(API_SEARCH + "?" + params.toString());
-  if (!res.ok) throw new Error("HTTP " + res.status);
-  const data = await res.json();
-  const list = (data.products || []).filter(x => x.code && x.code !== state.code);
-  searchCache.set(cacheKey, list);
-  return list;
+  const url = API_SEARCH + "?" + params.toString();
+
+  let lastErr = null;
+  for (let attempt = 1; attempt <= SEARCH_TRIES; attempt++) {
+    const wait = Math.max(0, lastSearchAt + SEARCH_GAP_MS - Date.now());
+    if (wait) await sleep(wait);
+    lastSearchAt = Date.now();
+    if (onTry) onTry(attempt);
+    try {
+      const res = await fetch(url);
+      if (res.status === 429 || res.status === 503) { lastErr = new Error("throttled"); continue; }
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      const list = (data.products || []).filter(x => x.code && x.code !== state.code);
+      cacheWrite(cacheKey, list);
+      return list;
+    } catch (e) {
+      /* "Failed to fetch" ist hier fast immer die abgewiesene 503-Antwort. */
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error("throttled");
 }
 
-/* Sucht von der speziellsten Kategorie nach oben, bis genug Treffer da sind.
-   Höchstens drei Abfragen, weil Open Food Facts nur zehn Suchen pro Minute erlaubt.
-   Liefert der deutsche Markt zu wenig, wird einmal weltweit nachgeschlagen. */
-async function loadSimilar(p) {
-  const cats = (p.categories_tags || []).slice().reverse();
-  let found = [];
-  let calls = 0;
-  for (const tag of cats.slice(0, 2)) {
-    found = await searchCategory(tag, MARKET);
-    calls++;
-    if (found.length >= 8) return found;
+/* Aus den Kategorien des Produkts eine brauchbare Leiter bauen.
+
+   HIER SASS DER FEHLER, wegen dem nie Vorschläge erschienen sind.
+   Open Food Facts hängt an categories_tags nicht nur die saubere englische
+   Systematik, sondern auch das, was Freiwillige in ihrer eigenen Sprache
+   eingetippt haben — bei Nutella etwa "fr:Nutella" und "fr:Nuttela". Diese
+   Einträge stehen am Ende der Liste, und genau dort hat die App zugegriffen,
+   weil dort sonst die speziellste Kategorie steht. Auf so einen Tag antwortet
+   der Dienst mit HTTP 200 und null Treffern. Das ist kein Fehler, also gab es
+   keinen zweiten Versuch — und die leere Liste wurde einen Tag lang gemerkt.
+
+   Die brauchbaren Einträge erkennt man daran, dass sie mit "en:" beginnen und
+   durchgehend klein geschrieben sind. Alles, was nicht in der Systematik
+   steht, behält bei Open Food Facts seine ursprüngliche Schreibweise. */
+function categoryLadder(p) {
+  return (p.categories_tags || [])
+    .filter(t => /^en:[a-z0-9-]+$/.test(t))
+    .slice().reverse();               // speziellste Kategorie zuerst
+}
+
+/* Höchstens so viele Kategoriestufen abklappern. */
+const LADDER_MAX = 3;
+
+/* Sucht von der speziellsten Kategorie nach oben. Die unterste Stufe trifft
+   oft nur Varianten desselben Produkts — bei Nutella sind das andere
+   Nutella-Größen, und darunter ist naturgemäß nichts Besseres. Deshalb wird
+   so lange eine Stufe allgemeiner gesucht, bis genug Produkte beisammen sind
+   UND mindestens eines besser bewertet ist. Treffer werden dabei gesammelt,
+   nicht ersetzt. */
+async function loadSimilar(p, onProgress) {
+  const ladder = categoryLadder(p).slice(0, LADDER_MAX);
+  if (!ladder.length) return [];
+
+  const own = gradeRank(p.nutriscore_grade);
+  const pool = new Map();
+  let answered = false, lastErr = null;
+
+  for (let i = 0; i < ladder.length; i++) {
+    let list = null;
+    try {
+      list = await searchCategory(ladder[i], MARKET, (versuch) => {
+        if (onProgress) onProgress(i + 1, ladder.length, tagLabel(ladder[i]), versuch);
+      });
+      answered = true;
+    } catch (e) {
+      lastErr = e;               // diese Stufe kam nicht durch, nächste versuchen
+      continue;
+    }
+
+    for (const r of list) if (r.code) pool.set(r.code, r);
+
+    const besser = [...pool.values()].some(r => gradeRank(r.nutriscore_grade) < own);
+    /* Ohne eigenen Nutri-Score gibt es nichts zu übertreffen — dann genügt
+       eine ordentliche Zahl ähnlicher Produkte. */
+    if (pool.size >= 6 && (own === 9 || besser)) break;
   }
-  if (found.length < 4 && MARKET && cats.length && calls < 3) {
-    const wide = await searchCategory(cats[0], "");
-    if (wide.length > found.length) return wide;
-  }
-  return found;
+
+  if (!answered) throw lastErr || new Error("throttled");
+  return [...pool.values()];
 }
 
 function relatedMarkup(list) {
@@ -879,10 +1058,10 @@ function render() {
     ${imageSection(code)}
 
     <h3 class="sec">Ähnliche Produkte</h3>
-    <div id="relZone"><p class="hint">Wird geladen …</p></div>
+    <div id="relZone"></div>
 
     <h3 class="sec">Günstiger bewertete Alternativen</h3>
-    <div id="altZone"><p class="hint">Wird geladen …</p></div>
+    <div id="altZone"></div>
 
     <h3 class="sec">Quelle</h3>
     <p class="hint">
@@ -905,39 +1084,245 @@ function refreshIngredients() {
   $("ingZone").innerHTML = ingredientsSection(state.product);
 }
 
-async function loadRecommendations() {
+/* Die Kategoriesuche läuft nicht automatisch: Open Food Facts drosselt sie
+   scharf, und wer sich durch mehrere Produkte scannt, hätte sonst nach dem
+   zweiten nur noch Fehlermeldungen. Liegt das Ergebnis im Zwischenspeicher,
+   erscheint es sofort. */
+function showRecommendations(list) {
+  state.similar = list;
+  $("relZone").innerHTML = relatedMarkup(list);
+  $("altZone").innerHTML = healthierMarkup(state.product, list);
+}
+
+function loadRecommendations() {
   const p = state.product;
-  if (!(p.categories_tags || []).length) {
-    $("relZone").innerHTML = `<p class="hint">Dem Produkt ist keine Kategorie zugeordnet, deshalb gibt es keine Vergleichsbasis.</p>`;
+  const ladder = categoryLadder(p).slice(0, LADDER_MAX);
+  if (!ladder.length) {
+    $("relZone").innerHTML = `<p class="hint">Diesem Produkt ist keine auswertbare Kategorie zugeordnet, deshalb gibt es keine Vergleichsbasis. Auf der Produktseite bei Open Food Facts lässt sich das nachtragen.</p>`;
     $("altZone").innerHTML = "";
     return;
   }
+
+  /* Was von früheren Suchen noch im Zwischenspeicher liegt, sofort zeigen —
+     über alle Stufen der Leiter hinweg, nicht nur über die unterste. */
+  const pool = new Map();
+  for (const tag of ladder) {
+    const c = cacheRead(tag + "|" + MARKET);
+    if (c) for (const r of c) if (r.code && r.code !== state.code) pool.set(r.code, r);
+  }
+  if (pool.size) { showRecommendations([...pool.values()]); return; }
+
+  $("relZone").innerHTML = `<button class="btn ghost" type="button" id="recBtn">Vergleichbare Produkte suchen</button>
+    <p class="hint">Die Kategoriesuche von Open Food Facts ist gedrosselt, deshalb läuft sie erst auf Klick. Das Ergebnis wird einen Tag lang gemerkt und steht beim nächsten Produkt aus derselben Gruppe sofort da.</p>`;
+  $("altZone").innerHTML = "";
+}
+
+async function runRecommendationSearch() {
+  const btn = $("recBtn");
+  if (btn) { btn.disabled = true; btn.textContent = "Suche läuft …"; }
+  $("relZone").insertAdjacentHTML("beforeend",
+    `<p class="hint" id="recStatus" role="status" aria-live="polite">Suche startet …</p>`);
+
+  const forCode = state.code;          // falls zwischendurch ein anderes Produkt geöffnet wird
+  const p = state.product;
+  const say = (t) => { const el = $("recStatus"); if (el) el.textContent = t; };
+
   try {
-    const list = await loadSimilar(p);
-    state.similar = list;
-    $("relZone").innerHTML = relatedMarkup(list);
-    $("altZone").innerHTML = healthierMarkup(p, list);
+    const list = await loadSimilar(p, (stufe, von, name, versuch) => {
+      say(`Kategorie „${name}“ (${stufe} von ${von})` +
+          (versuch > 1 ? ` — Versuch ${versuch}, der Dienst ist gerade ausgelastet` : " …"));
+    });
+    if (state.code !== forCode) return;
+    if (!list.length) {
+      $("relZone").innerHTML = `<p class="hint">Open Food Facts kennt für den deutschen Markt in dieser Produktgruppe keine weiteren Einträge. Das heißt nicht, dass es keine gibt — die Datenbank wird von Freiwilligen gepflegt und ist lückenhaft.</p>`;
+      $("altZone").innerHTML = "";
+      return;
+    }
+    showRecommendations(list);
   } catch (e) {
-    const msg = String(e.message).includes("429")
-      ? "Die Suche ist gerade gedrosselt (zehn Suchanfragen pro Minute). Gleich noch einmal versuchen."
-      : "Vergleichsprodukte konnten nicht geladen werden: " + e.message;
-    $("relZone").innerHTML = `<p class="hint err">${esc(msg)}</p>`;
+    if (state.code !== forCode) return;
+    $("relZone").innerHTML = `
+      <p class="hint err">Open Food Facts hat die Suche mehrfach abgewiesen. Der Dienst wirft Suchanfragen sofort ab, wenn gerade viel los ist — das ist kein Fehler deiner Verbindung. Ein erneuter Versuch klappt meist schon nach wenigen Sekunden.</p>
+      <button class="btn ghost" type="button" id="recBtn">Noch einmal versuchen</button>`;
     $("altZone").innerHTML = "";
   }
 }
 
 /* ========================================================================
+   Suche nach Produktnamen
+   ======================================================================== */
+
+/* Gemessen am 22. September 2026: /cgi/search.pl verhält sich bei Überlast
+   genauso wie die Kategoriesuche — Abweisung mit HTTP 503 nach 0,2 Sekunden,
+   echte Antwort nach etwa einer halben. Deshalb dieselbe Strategie: zügig
+   nachfassen statt lange warten, gemeinsamer Abstand über lastSearchAt. */
+
+const TEXT_PAGE_SIZE = 24;
+let suche = { begriff: "", seite: 1, treffer: [], gesamt: 0 };
+
+async function searchText(begriff, seite) {
+  const cacheKey = "txt:" + begriff.toLowerCase() + "|" + seite + "|" + MARKET;
+  const hit = cacheRead(cacheKey);
+  if (hit) return hit;
+
+  const params = new URLSearchParams({
+    search_terms: begriff,
+    json: "1",
+    page: String(seite),
+    page_size: String(TEXT_PAGE_SIZE),
+    fields: "code,product_name,product_name_de,brands,quantity,nutriscore_grade,nova_group,image_front_small_url"
+  });
+  /* Landesfilter. MARKET steht als Systematik-Tag da ("en:germany"), diese
+     ältere Adresse will nur den blanken Namen. */
+  if (MARKET) {
+    params.set("tagtype_0", "countries");
+    params.set("tag_contains_0", "contains");
+    params.set("tag_0", MARKET.replace(/^[a-z]{2}:/, ""));
+  }
+  const url = API_TEXT + "?" + params.toString();
+
+  let lastErr = null;
+  for (let attempt = 1; attempt <= SEARCH_TRIES; attempt++) {
+    const wait = Math.max(0, lastSearchAt + SEARCH_GAP_MS - Date.now());
+    if (wait) await sleep(wait);
+    lastSearchAt = Date.now();
+    try {
+      const res = await fetch(url);
+      if (res.status === 429 || res.status === 503) { lastErr = new Error("throttled"); continue; }
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      const data = await res.json();
+      const box = {
+        treffer: (data.products || []).filter(x => x.code),
+        gesamt: Number(data.count) || 0
+      };
+      cacheWrite(cacheKey, box);
+      return box;
+    } catch (e) {
+      /* "Failed to fetch" ist auch hier fast immer die abgewiesene Antwort. */
+      lastErr = e;
+    }
+  }
+  throw lastErr || new Error("throttled");
+}
+
+function searchResultMarkup() {
+  if (!suche.treffer.length) {
+    return `<p class="hint">Zu „${esc(suche.begriff)}“ hat Open Food Facts nichts gefunden.
+      Ein kürzeres oder anderes Wort hilft oft — die Einträge stammen von Freiwilligen
+      und sind nicht einheitlich benannt.</p>`;
+  }
+
+  const zeilen = suche.treffer.map(r => {
+    const g = String(r.nutriscore_grade || "").toLowerCase();
+    const badge = NUTRI_COLORS[g]
+      ? `<span class="grade" style="background:${NUTRI_COLORS[g]}; color:${NUTRI_TEXT[g]}">${g.toUpperCase()}</span>`
+      : "";
+    return `<button class="alt" type="button" data-open="${esc(r.code)}">
+      <span class="pic">${r.image_front_small_url ? `<img src="${esc(r.image_front_small_url)}" alt="" loading="lazy">` : ""}</span>
+      <span class="body">
+        <span class="nm">${esc(recName(r))}</span>
+        <span class="mt">${esc(r.brands || "ohne Markenangabe")}${r.quantity ? " · " + esc(r.quantity) : ""}</span>
+      </span>
+      ${badge}
+    </button>`;
+  }).join("");
+
+  const mehr = suche.treffer.length < suche.gesamt
+    ? `<div class="row" style="margin-top:12px">
+         <button class="btn small ghost" type="button" id="moreBtn">Weitere Treffer laden</button>
+       </div>`
+    : "";
+
+  return `<p class="hint">${suche.gesamt} Treffer zu „${esc(suche.begriff)}“${MARKET ? ", eingegrenzt auf Produkte für Deutschland" : ""}.
+    Angezeigt: ${suche.treffer.length}. Ein Fehlen bedeutet nicht, dass es das Produkt nicht gibt — nur, dass es noch niemand eingetragen hat.</p>
+    <div class="alts">${zeilen}</div>${mehr}`;
+}
+
+async function runTextSearch(seite) {
+  const begriff = $("textQuery").value.trim();
+  if (begriff.length < 2) {
+    setHint("Für die Namenssuche bitte mindestens zwei Buchstaben eingeben.", true);
+    return;
+  }
+  if (navigator.onLine === false) {
+    setHint("Du bist gerade offline. Die Suche fragt Open Food Facts live ab und braucht eine Internetverbindung.", true);
+    return;
+  }
+
+  /* Eine vorherige Fehlermeldung oben stehen lassen wäre irreführend, sobald
+     die Suche wirklich läuft. */
+  setHint("Suche nach Produktnamen läuft — die Ergebnisse erscheinen unten.");
+
+  const anhaengen = seite > 1 && begriff === suche.begriff;
+  if (!anhaengen) {
+    suche = { begriff, seite: 1, treffer: [], gesamt: 0 };
+    $("searchZone").innerHTML = "";
+    seite = 1;
+  }
+
+  $("searchPanel").hidden = false;
+  const status = $("searchStatus");
+  status.classList.remove("err");
+  status.textContent = anhaengen ? "Weitere Treffer werden geladen …" : `Suche nach „${begriff}“ …`;
+
+  const mehrBtn = $("moreBtn");
+  if (mehrBtn) mehrBtn.disabled = true;
+
+  try {
+    const box = await searchText(begriff, seite);
+    suche.begriff = begriff;
+    suche.seite = seite;
+    suche.gesamt = box.gesamt;
+    const bekannt = new Set(suche.treffer.map(x => x.code));
+    for (const r of box.treffer) if (!bekannt.has(r.code)) suche.treffer.push(r);
+
+    $("searchZone").innerHTML = searchResultMarkup();
+    status.textContent = "";
+    setHint(suche.treffer.length
+      ? "Tipp auf ein Ergebnis zeigt Nährwerte, Zutaten und Alternativen."
+      : "Nichts gefunden. Ein anderes oder kürzeres Wort probieren.");
+    if (!anhaengen) $("searchPanel").scrollIntoView({ behavior: "smooth", block: "start" });
+  } catch (e) {
+    status.classList.add("err");
+    status.textContent = "Open Food Facts hat die Suche mehrfach abgewiesen. Der Dienst weist Anfragen sofort ab, wenn gerade viel los ist — das liegt nicht an deiner Verbindung. Ein erneuter Versuch klappt meist nach wenigen Sekunden.";
+    if (mehrBtn) mehrBtn.disabled = false;
+  }
+}
+
+$("searchBtn").addEventListener("click", () => runTextSearch(1));
+$("textQuery").addEventListener("keydown", (e) => { if (e.key === "Enter") runTextSearch(1); });
+$("closeSearchBtn").addEventListener("click", () => { $("searchPanel").hidden = true; });
+
+/* ========================================================================
    Ereignisse innerhalb der Produktansicht
    ======================================================================== */
+/* Beim Tippen nur rechnen, wenn wirklich eine Zahl im Feld steht. Vorher
+   sprang die Portion beim Leeren des Feldes sofort auf 1 g, und die Tabelle
+   rechnete sich bei jedem einzelnen Tastendruck neu. */
 document.addEventListener("input", (ev) => {
   if (ev.target.id !== "portionInput") return;
-  const v = Math.max(1, Math.min(5000, Math.round(Number(ev.target.value) || 0)));
-  if (!v) return;
-  state.portion = v;
+  const roh = String(ev.target.value).trim();
+  if (roh === "") return;
+  const n = Number(roh.replace(",", "."));
+  if (!isFinite(n) || n <= 0) return;
+  state.portion = Math.max(1, Math.min(5000, Math.round(n)));
   refreshNutrition();
 });
 
+/* Wer das Feld leer oder mit Unsinn verlässt, bekommt den zuletzt gültigen
+   Wert zurückgeschrieben, statt vor einem leeren Feld zu stehen. */
+document.addEventListener("change", (ev) => {
+  if (ev.target.id !== "portionInput") return;
+  ev.target.value = state.portion;
+});
+
 document.addEventListener("click", async (ev) => {
+  /* Vergleichssuche starten */
+  if (ev.target.closest("#recBtn")) { runRecommendationSearch(); return; }
+
+  /* Nächste Seite der Namenssuche */
+  if (ev.target.closest("#moreBtn")) { runTextSearch(suche.seite + 1); return; }
+
   /* Portionsvorschlag */
   const pc = ev.target.closest("[data-portion]");
   if (pc) {
@@ -1039,6 +1424,12 @@ async function lookup(code) {
   code = String(code).replace(/\D/g, "");
   if (code.length < 8) { setHint("Das sieht nicht nach einem gültigen Barcode aus.", true); return; }
   if (busy) return;
+  /* Ohne Netz gar nicht erst losschicken. Die App-Hülle liegt zwar offline
+     bereit, die Nährwerte kommen aber live von Open Food Facts. */
+  if (navigator.onLine === false) {
+    setHint("Du bist gerade offline. Die Produktdaten kommen live von Open Food Facts — dafür braucht die App eine Internetverbindung.", true);
+    return;
+  }
   busy = true;
   setHint("Suche " + code + " …");
   try {
@@ -1073,14 +1464,23 @@ async function lookup(code) {
     };
 
     render();
-    addHistory(code, p.product_name_de || p.product_name || "Unbenanntes Produkt", p.brands || "");
+    addHistory(code, p);
     setHint("Gefunden. Nächsten Barcode scannen oder eintippen.");
   } catch (e) {
-    setHint("Abruf fehlgeschlagen: " + e.message + ". Internetverbindung prüfen.", true);
+    setHint(navigator.onLine === false
+      ? "Die Verbindung ist während des Abrufs abgerissen. Sobald du wieder online bist, noch einmal versuchen."
+      : "Open Food Facts war gerade nicht erreichbar. Meist hilft ein zweiter Versuch nach ein paar Sekunden.", true);
   } finally {
     busy = false;
   }
 }
+
+/* Verbindungswechsel sichtbar machen, statt den Nutzer ins Leere laufen zu
+   lassen. Wenn gerade ein Produkt auf dem Schirm ist, bleibt es stehen. */
+window.addEventListener("offline", () =>
+  setHint("Offline. Gescannte Produkte lassen sich erst wieder abrufen, wenn die Verbindung zurück ist.", true));
+window.addEventListener("online", () =>
+  setHint("Wieder online. Barcode scannen oder eintippen."));
 
 $("lookupBtn").addEventListener("click", () => lookup($("manualCode").value));
 $("manualCode").addEventListener("keydown", (e) => { if (e.key === "Enter") lookup(e.target.value); });
@@ -1095,9 +1495,33 @@ function readHistory() {
 function writeHistory(list) {
   try { localStorage.setItem("etikett-history", JSON.stringify(list.slice(0, 40))); } catch (e) {}
 }
-function addHistory(code, name, brand) {
+/* Welche Nährwerte im Verlauf mitgeschrieben werden. Der CSV-Export soll für
+   ein Handout im Kurs direkt taugen, ohne dass jedes Produkt noch einmal
+   einzeln aufgerufen werden muss. Alle Werte beziehen sich auf 100 g bzw. ml. */
+const HIST_NUTRIENTS = [
+  ["energy-kcal",   "Energie kcal/100"],
+  ["fat",           "Fett g/100"],
+  ["saturated-fat", "ges. Fettsäuren g/100"],
+  ["carbohydrates", "Kohlenhydrate g/100"],
+  ["sugars",        "Zucker g/100"],
+  ["fiber",         "Ballaststoffe g/100"],
+  ["proteins",      "Eiweiß g/100"],
+  ["salt",          "Salz g/100"]
+];
+
+function addHistory(code, p) {
+  const n = {};
+  for (const [key] of HIST_NUTRIENTS) n[key] = val100(p, key);
   const list = readHistory().filter(x => x.code !== code);
-  list.unshift({ code, name, brand, at: new Date().toISOString() });
+  list.unshift({
+    code,
+    name:  p.product_name_de || p.product_name || "Unbenanntes Produkt",
+    brand: p.brands || "",
+    grade: String(p.nutriscore_grade || "").toUpperCase(),
+    nova:  p.nova_group || "",
+    n,
+    at: new Date().toISOString()
+  });
   writeHistory(list);
   paintHistory();
 }
@@ -1113,8 +1537,23 @@ function paintHistory() {
 }
 $("clearBtn").addEventListener("click", () => { writeHistory([]); paintHistory(); });
 $("exportBtn").addEventListener("click", () => {
-  const rows = [["Barcode","Produkt","Marke","Gescannt am"]]
-    .concat(readHistory().map(x => [x.code, x.name, x.brand, x.at]));
+  /* Zahlen mit Komma, damit Excel in deutscher Einstellung sie als Zahl
+     erkennt und nicht als Text. Fehlt ein Wert, bleibt die Zelle leer —
+     geschätzt wird hier nichts. */
+  const zahl = (v) => (v === null || v === undefined) ? "" : String(v).replace(".", ",");
+  const zeit = (iso) => {
+    const d = new Date(iso);
+    return isFinite(d.getTime()) ? d.toLocaleString("de-DE") : String(iso || "");
+  };
+  const kopf = ["Barcode","Produkt","Marke","Nutri-Score","NOVA"]
+    .concat(HIST_NUTRIENTS.map(x => x[1]))
+    .concat(["Gescannt am"]);
+  const rows = [kopf].concat(readHistory().map(x => {
+    const n = x.n || {};
+    return [x.code, x.name, x.brand, x.grade || "", x.nova || ""]
+      .concat(HIST_NUTRIENTS.map(([key]) => zahl(n[key])))
+      .concat([zeit(x.at)]);
+  }));
   const csv = rows.map(r => r.map(c => `"${String(c ?? "").replace(/"/g,'""')}"`).join(";")).join("\r\n");
   const blob = new Blob(["﻿" + csv], { type:"text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -1128,7 +1567,8 @@ paintHistory();
 /* ========================================================================
    Kamera und Barcode-Erkennung
    ======================================================================== */
-let stream = null, detector = null, zxingReader = null, scanning = false, lastCode = "", lastAt = 0;
+let stream = null, detector = null, zxingReader = null, zxingControls = null;
+let scanning = false, lastCode = "", lastAt = 0;
 const FORMATS = ["ean_13","ean_8","upc_a","upc_e","code_128","code_39","itf"];
 
 function loadScript(src) {
@@ -1174,7 +1614,13 @@ async function startCamera() {
   try {
     await loadScript("https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js");
     zxingReader = new window.ZXingBrowser.BrowserMultiFormatReader();
-    await zxingReader.decodeFromVideoElement(v, (result) => {
+    /* Der Rückgabewert ist das Steuerobjekt der Erkennungsschleife. Ohne ihn
+       lässt sich die Schleife nicht anhalten: die frühere Zeile rief beim
+       Stoppen zxingReader.reset() auf, und diese Methode gibt es in
+       @zxing/browser nicht mehr. Der Aufruf lief still ins Leere, und die
+       Erkennung rechnete nach dem Ausschalten der Kamera im Hintergrund
+       weiter — auf Kosten des Akkus. */
+    zxingControls = await zxingReader.decodeFromVideoElement(v, (result) => {
       if (result && scanning) onCode(result.getText());
     });
     setHint("Barcode mittig ins Rechteck halten.");
@@ -1204,7 +1650,8 @@ function onCode(raw) {
 
 function stopCamera() {
   scanning = false;
-  if (zxingReader) { try { zxingReader.reset(); } catch (e) {} zxingReader = null; }
+  if (zxingControls) { try { zxingControls.stop(); } catch (e) {} zxingControls = null; }
+  zxingReader = null;
   if (stream) { stream.getTracks().forEach(t => t.stop()); stream = null; }
   $("video").srcObject = null;
   $("videoBox").hidden = true;
